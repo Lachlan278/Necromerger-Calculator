@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<title>NecroMerger Time Shard Calculator</title>
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#241d33">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Time Shards">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<style>
+  :root{
+    --bg:#141018; --panel:#1f1a29; --panel2:#241f30; --accent:#8b5cf6;
+    --accent2:#c084fc; --text:#e9e3f5; --muted:#9c92b3; --good:#4ade80;
+  }
+  *{box-sizing:border-box;}
+  button{font-family:inherit;}
+  body{
+    margin:0; padding:24px; font-family:'Segoe UI',system-ui,sans-serif;
+    background:radial-gradient(circle at top,#241d33,#0e0b14 70%);
+    color:var(--text); min-height:100vh;
+  }
+  .wrap{max-width:1080px; margin:0 auto;}
+  h1{
+    text-align:center; font-size:1.6rem; margin-bottom:4px;
+    background:linear-gradient(90deg,var(--accent2),#60a5fa);
+    -webkit-background-clip:text; background-clip:text; color:transparent;
+  }
+  .sub{text-align:center; color:var(--muted); margin-bottom:24px; font-size:0.9rem;}
+  .card{
+    background:var(--panel); border:1px solid #352b46; border-radius:14px;
+    padding:18px 20px; margin-bottom:16px;
+  }
+  .card h2{
+    margin:0 0 12px; font-size:1rem; color:var(--accent2);
+    display:flex; align-items:center; gap:8px;
+  }
+  label{display:block; font-size:0.85rem; color:var(--muted); margin-bottom:6px;}
+  select, input[type=number]{
+    width:100%; padding:10px 12px; border-radius:8px; border:1px solid #3a2f4d;
+    background:var(--panel2); color:var(--text); font-size:0.95rem;
+  }
+  select:focus, input:focus{outline:2px solid var(--accent);}
+
+  .config-grid{
+    display:grid; grid-template-columns:1fr; gap:16px; margin-bottom:0;
+  }
+  .config-grid .card{margin-bottom:0;}
+
+  .leg-groups-grid{
+    display:grid; grid-template-columns:1fr; gap:14px;
+  }
+
+  .results-grid{
+    display:grid; grid-template-columns:1fr; gap:16px; align-items:start;
+  }
+  .results-grid .result{margin-top:0;}
+
+  @media (min-width:680px){
+    .config-grid{grid-template-columns:repeat(3,1fr);}
+    .leg-groups-grid{grid-template-columns:1fr 1fr;}
+    .results-grid{grid-template-columns:1fr 1fr;}
+  }
+  @media (min-width:900px){
+    body{padding:36px 24px;}
+  }
+  .leg-group{
+    border:1px solid #352b46; border-radius:10px; padding:12px 14px;
+  }
+  .leg-group-title{
+    font-size:0.8rem; color:var(--muted); margin-bottom:8px; display:flex; justify-content:space-between;
+  }
+  .leg-item{
+    display:flex; align-items:center; gap:10px; padding:9px 0; flex-wrap:wrap;
+    border-top:1px solid #2a2236;
+  }
+  .leg-item:first-of-type{border-top:none;}
+  .leg-item img{
+    width:34px; height:34px; object-fit:contain; border-radius:6px; flex:0 0 auto;
+    background:#0e0b14; padding:3px; border:1px solid #352b46;
+  }
+  .leg-item .name{flex:1 1 auto; font-size:0.88rem; min-width:100px;}
+  .leg-item .bonus-text{font-size:0.72rem; color:var(--muted); display:block;}
+  .leg-item input{width:46px; text-align:center; padding:8px 4px;}
+  .qty-block{display:flex; flex-direction:column; gap:4px; align-items:center;}
+  .qty-label{font-size:0.65rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.03em;}
+  .stepper{display:flex; align-items:center; gap:8px;}
+  .stepper input{text-align:center;}
+  .step-btn{
+    width:38px; height:38px; flex:0 0 auto; border-radius:8px; border:1px solid #3a2f4d;
+    background:var(--panel2); color:var(--text); font-size:1.1rem; font-weight:700;
+    cursor:pointer; padding:0; margin:0; line-height:1;
+  }
+  .step-btn:hover{background:#3a2f4d;}
+  .leg-item .step-btn{width:26px; height:26px; font-size:0.9rem;}
+  .leg-item .qty-wrap{display:flex; align-items:center; gap:4px;}
+  .set-badge{
+    font-size:0.7rem; padding:2px 8px; border-radius:20px; background:#2d2440; color:var(--accent2);
+  }
+  .set-badge.active{background:#2f6b3f; color:var(--good);}
+  .result{
+    text-align:center; padding:24px; border-radius:14px;
+    background:linear-gradient(135deg,#2a1f3d,#1a1426); border:1px solid var(--accent);
+  }
+  .result img{width:34px; vertical-align:middle; margin-right:8px;}
+  .result .num{
+    font-size:2.4rem; font-weight:700; color:var(--good);
+  }
+  .result .label{color:var(--muted); font-size:0.85rem; margin-top:4px;}
+  .breakdown{
+    margin-top:14px; font-size:0.8rem; color:var(--muted); text-align:left;
+    display:grid; grid-template-columns:1fr 1fr; gap:4px 16px;
+  }
+  .breakdown span.v{color:var(--text); float:right;}
+  .btn-primary{
+    display:block; width:100%; max-width:100%; padding:14px; border:none; border-radius:10px;
+    font-size:1rem; font-weight:600;
+    background:linear-gradient(90deg,var(--accent),#6d28d9); color:white; cursor:pointer; margin:8px auto 0;
+  }
+  .btn-primary:hover{filter:brightness(1.1);}
+  @media (min-width:680px){
+    .btn-primary{max-width:340px;}
+  }
+  .hint{font-size:0.75rem; color:var(--muted); margin-top:6px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>⏳ Time Shard Calculator</h1>
+  <div class="sub">NecroMerger — Time Machine payout: Level × Feats × Legendaries × Other</div>
+
+  <div class="config-grid">
+    <div class="card">
+      <h2>🧟 Devourer Level</h2>
+      <select id="level"></select>
+      <div class="hint">Base shards come from the game's published checkpoint table.</div>
+    </div>
+
+    <div class="card">
+      <h2>🏆 Feats Completed</h2>
+      <label for="feats">Highest Feat Tier completed (0–31)</label>
+      <div class="stepper">
+        <button type="button" class="step-btn" onclick="step('feats',-1,0,31)">−</button>
+        <input type="number" id="feats" min="0" max="31" value="0">
+        <button type="button" class="step-btn" onclick="step('feats',1,0,31)">+</button>
+      </div>
+      <div class="hint">Base 100%, +10% per tier. Max 31 tiers = 410%.</div>
+    </div>
+
+    <div class="card">
+      <h2>✨ Other Bonuses</h2>
+      <label for="other">Other bonus % (Baby Skin, Time Pieces, etc)</label>
+      <input type="number" id="other" min="0" value="0">
+      <div class="hint">Base 100%, enter only the extra % (e.g. 5 for Baby Skin, 125 for maxed Time Pieces).</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:16px;">
+    <h2>👑 Legendaries</h2>
+    <div id="legendaries" class="leg-groups-grid"></div>
+  </div>
+
+  <button class="btn-primary" onclick="calculate()">Calculate Time Shards</button>
+
+  <div id="resultsWrap" style="display:none; margin-top:16px;">
+    <div class="results-grid">
+      <div class="card result">
+        <img src="https://necromerger.wiki.gg/images/Time_Shard.png?2f5a9f" alt="">
+        <div class="num" id="totalOutCurrent">0</div>
+        <div class="label">Total Time Shards — Current Legendaries</div>
+        <div class="breakdown" id="breakdownOutCurrent"></div>
+      </div>
+
+      <div class="card result" style="border-color:var(--accent2);">
+        <img src="https://necromerger.wiki.gg/images/Time_Shard.png?2f5a9f" alt="">
+        <div class="num" id="totalOutProjected">0</div>
+        <div class="label">Total Time Shards — Current + To Be Created</div>
+        <div class="breakdown" id="breakdownOutProjected"></div>
+      </div>
+    </div>
+
+    <div class="card" id="runeCard" style="display:none; margin-top:16px;">
+      <h2>🔮 Runes Needed To Create</h2>
+      <div class="breakdown" id="runeOut"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+const LEVEL_TABLE = [
+  {lvl:40, base:275}, {lvl:50, base:750}, {lvl:60, base:1500}, {lvl:70, base:3250},
+  {lvl:80, base:5750}, {lvl:90, base:10000}, {lvl:100, base:15000},
+  {lvl:150, base:40000, note:"Post-Rocket"}, {lvl:200, base:65000, note:"Post-Rocket"},
+  {lvl:300, base:150000, note:"Post-Rocket"}, {lvl:400, base:275000, note:"Post-Rocket"},
+  {lvl:500, base:450000, note:"Post-Rocket"}, {lvl:600, base:700000, note:"Post-Rocket"},
+  {lvl:700, base:1050000, note:"Post-Rocket"}, {lvl:800, base:1550000, note:"Post-Rocket"},
+  {lvl:900, base:2250000, note:"Post-Rocket"}, {lvl:1000, base:3250000, note:"Post-Rocket"}
+];
+
+const GROUPS = [
+  { id:"g1", groupBonus:20, members:[
+    {id:"lich", name:"Lich", bonus:10, add:5, img:"https://necromerger.wiki.gg/images/thumb/Lich.webp/40px-Lich.webp?3611d4", cost:{Ice:640}},
+    {id:"gorgon", name:"Gorgon", bonus:10, add:5, img:"https://necromerger.wiki.gg/images/thumb/Gorgon.webp/40px-Gorgon.webp?bed74a", cost:{Poison:640}},
+    {id:"harpy", name:"Harpy", bonus:10, add:5, img:"https://necromerger.wiki.gg/images/thumb/Harpy.webp/40px-Harpy.webp?a0796e", cost:{Blood:640}}
+  ]},
+  { id:"g2", groupBonus:40, members:[
+    {id:"reaper", name:"Reaper", bonus:20, add:10, img:"https://necromerger.wiki.gg/images/thumb/Reaper.webp/40px-Reaper.webp?fa70f1", cost:{Ice:1600, Moon:640}},
+    {id:"cyclops", name:"Cyclops", bonus:20, add:10, img:"https://necromerger.wiki.gg/images/thumb/Cyclops.webp/40px-Cyclops.webp?8d0443", cost:{Poison:1600, Moon:640}},
+    {id:"archdemon", name:"Archdemon", bonus:20, add:10, img:"https://necromerger.wiki.gg/images/thumb/Archdemon.webp/40px-Archdemon.webp?ccdd95", cost:{Blood:960, Death:960}}
+  ]},
+  { id:"g3", groupBonus:60, members:[
+    {id:"robochicken", name:"Robo Chicken", bonus:20, add:10, img:"https://necromerger.wiki.gg/images/thumb/Robo_Chicken.webp/40px-Robo_Chicken.webp?fc0168", cost:{Ice:960, Poison:480}},
+    {id:"shieldbot", name:"Shield Bot", bonus:30, add:15, img:"https://necromerger.wiki.gg/images/thumb/Shield_Bot_Mana.webp/40px-Shield_Bot_Mana.webp?1f09b1", cost:{Cosmic:640}},
+    {id:"soulstalker", name:"Soul Stalker", bonus:40, add:20, img:"https://necromerger.wiki.gg/images/thumb/Soul_Stalker.webp/40px-Soul_Stalker.webp?42473f", cost:{Death:800, Cosmic:800}}
+  ]},
+  { id:"g4", groupBonus:80, members:[
+    {id:"cursed", name:"The Cursed", bonus:40, add:20, img:"https://necromerger.wiki.gg/images/thumb/The_Cursed.webp/40px-The_Cursed.webp?88e015", cost:{Ice:2240, Moon:640}},
+    {id:"colossus", name:"The Colossus", bonus:40, add:20, img:"https://necromerger.wiki.gg/images/thumb/The_Colossus.webp/40px-The_Colossus.webp?73574a", cost:{Poison:2240, Moon:640}},
+    {id:"infernal", name:"The Infernal", bonus:40, add:20, img:"https://necromerger.wiki.gg/images/thumb/The_Infernal.webp/40px-The_Infernal.webp?d79965", cost:{Blood:1600, Death:960}}
+  ]}
+];
+
+const RUNE_ICONS = {
+  Ice:"❄️", Poison:"☠️", Blood:"🩸", Moon:"🌙", Death:"💀", Cosmic:"🌌"
+};
+
+// Build level dropdown
+const levelSel = document.getElementById('level');
+LEVEL_TABLE.forEach(l => {
+  const opt = document.createElement('option');
+  opt.value = l.base;
+  opt.textContent = `Lvl ${l.lvl} — ${l.base.toLocaleString()} shards${l.note ? " ("+l.note+")" : ""}`;
+  levelSel.appendChild(opt);
+});
+levelSel.selectedIndex = 1; // default lvl 50
+
+// Build legendary inputs
+const legWrap = document.getElementById('legendaries');
+GROUPS.forEach(g => {
+  const gDiv = document.createElement('div');
+  gDiv.className = 'leg-group';
+  gDiv.innerHTML = `<div class="leg-group-title"><span>Set bonus if all 3 owned</span><span class="set-badge" id="badge-${g.id}">+${g.groupBonus}%</span></div>`;
+  g.members.forEach(m => {
+    const row = document.createElement('div');
+    row.className = 'leg-item';
+    row.innerHTML = `
+      <img src="${m.img}" alt="${m.name}">
+      <div class="name">${m.name}<span class="bonus-text">+${m.bonus}% first, +${m.add}% each dupe</span></div>
+      <div class="qty-block">
+        <span class="qty-label">Current</span>
+        <div class="qty-wrap">
+          <button type="button" class="step-btn" onclick="step('count-${m.id}',-1,0,99)">−</button>
+          <input type="number" min="0" value="1" id="count-${m.id}" data-group="${g.id}">
+          <button type="button" class="step-btn" onclick="step('count-${m.id}',1,0,99)">+</button>
+        </div>
+      </div>
+      <div class="qty-block">
+        <span class="qty-label">To Create</span>
+        <div class="qty-wrap">
+          <button type="button" class="step-btn" onclick="step('tocreate-${m.id}',-1,0,99)">−</button>
+          <input type="number" min="0" value="0" id="tocreate-${m.id}" data-group="${g.id}">
+          <button type="button" class="step-btn" onclick="step('tocreate-${m.id}',1,0,99)">+</button>
+        </div>
+      </div>
+    `;
+    gDiv.appendChild(row);
+  });
+  legWrap.appendChild(gDiv);
+});
+
+function step(id, delta, min, max){
+  const el = document.getElementById(id);
+  let val = (parseInt(el.value) || 0) + delta;
+  if (val < min) val = min;
+  if (val > max) val = max;
+  el.value = val;
+}
+
+function legendaryMultiplier(countFn){
+  let legendarySum = 0;
+  const badgeState = {};
+  GROUPS.forEach(g => {
+    let allOwned = true;
+    g.members.forEach(m => {
+      const n = countFn(m);
+      if (n <= 0) { allOwned = false; return; }
+      legendarySum += m.bonus + (n - 1) * m.add;
+    });
+    badgeState[g.id] = allOwned;
+    if (allOwned) legendarySum += g.groupBonus;
+  });
+  return { mult: (100 + legendarySum) / 100, badgeState };
+}
+
+function calculate(){
+  const base = parseFloat(levelSel.value);
+  const feats = parseFloat(document.getElementById('feats').value) || 0;
+  const other = parseFloat(document.getElementById('other').value) || 0;
+
+  const featMult = (100 + feats * 10) / 100;
+  const otherMult = (100 + other) / 100;
+
+  const currentCount = m => parseInt(document.getElementById(`count-${m.id}`).value) || 0;
+  const projectedCount = m => currentCount(m) + (parseInt(document.getElementById(`tocreate-${m.id}`).value) || 0);
+
+  const currentLeg = legendaryMultiplier(currentCount);
+  const projectedLeg = legendaryMultiplier(projectedCount);
+
+  // Update set badges based on projected ownership (shows what's achievable)
+  GROUPS.forEach(g => {
+    const badge = document.getElementById(`badge-${g.id}`);
+    badge.classList.toggle('active', projectedLeg.badgeState[g.id]);
+  });
+
+  const totalCurrent = base * featMult * currentLeg.mult * otherMult;
+  const totalProjected = base * featMult * projectedLeg.mult * otherMult;
+
+  document.getElementById('resultsWrap').style.display = 'block';
+
+  document.getElementById('totalOutCurrent').textContent = Math.round(totalCurrent).toLocaleString();
+  document.getElementById('breakdownOutCurrent').innerHTML = `
+    <span>Base Shards</span><span class="v">${base.toLocaleString()}</span>
+    <span>Feats Multiplier</span><span class="v">×${featMult.toFixed(2)}</span>
+    <span>Legendaries Multiplier</span><span class="v">×${currentLeg.mult.toFixed(2)}</span>
+    <span>Other Multiplier</span><span class="v">×${otherMult.toFixed(2)}</span>
+  `;
+
+  document.getElementById('totalOutProjected').textContent = Math.round(totalProjected).toLocaleString();
+  document.getElementById('breakdownOutProjected').innerHTML = `
+    <span>Base Shards</span><span class="v">${base.toLocaleString()}</span>
+    <span>Feats Multiplier</span><span class="v">×${featMult.toFixed(2)}</span>
+    <span>Legendaries Multiplier</span><span class="v">×${projectedLeg.mult.toFixed(2)}</span>
+    <span>Other Multiplier</span><span class="v">×${otherMult.toFixed(2)}</span>
+  `;
+
+  // Rune requirements for the "to be created" legendaries
+  const runeTotals = {};
+  let anyToCreate = false;
+  GROUPS.forEach(g => {
+    g.members.forEach(m => {
+      const n = parseInt(document.getElementById(`tocreate-${m.id}`).value) || 0;
+      if (n > 0 && m.cost) {
+        anyToCreate = true;
+        Object.entries(m.cost).forEach(([rune, amt]) => {
+          runeTotals[rune] = (runeTotals[rune] || 0) + amt * n;
+        });
+      }
+    });
+  });
+
+  const runeCard = document.getElementById('runeCard');
+  if (anyToCreate) {
+    runeCard.style.display = 'block';
+    const order = ['Ice','Poison','Blood','Moon','Death','Cosmic'];
+    let html = '';
+    order.forEach(rune => {
+      if (runeTotals[rune]) {
+        html += `<span>${RUNE_ICONS[rune]} ${rune} Runes</span><span class="v">${runeTotals[rune].toLocaleString()}</span>`;
+      }
+    });
+    document.getElementById('runeOut').innerHTML = html;
+  } else {
+    runeCard.style.display = 'none';
+  }
+
+  document.getElementById('resultsWrap').scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>
