@@ -272,6 +272,8 @@ GROUPS.forEach(g => {
   legWrap.appendChild(gDiv);
 });
 
+const STORAGE_KEY = 'necromerger-timeshard-state-v1';
+
 function step(id, delta, min, max){
   const el = document.getElementById(id);
   let val = (parseInt(el.value) || 0) + delta;
@@ -279,6 +281,57 @@ function step(id, delta, min, max){
   if (val > max) val = max;
   el.value = val;
 }
+
+function collectState(){
+  const legendaries = {};
+  GROUPS.forEach(g => g.members.forEach(m => {
+    legendaries[m.id] = {
+      current: document.getElementById(`count-${m.id}`).value,
+      tocreate: document.getElementById(`tocreate-${m.id}`).value
+    };
+  }));
+  return {
+    level: levelSel.value,
+    feats: document.getElementById('feats').value,
+    other: document.getElementById('other').value,
+    legendaries
+  };
+}
+
+function saveState(){
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(collectState()));
+  } catch (e) {
+    // storage unavailable (private browsing, quota, etc) - fail silently
+  }
+}
+
+function loadState(){
+  let saved;
+  try {
+    saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+  } catch (e) {
+    return;
+  }
+  if (!saved) return;
+
+  if (saved.level) levelSel.value = saved.level;
+  if (saved.feats !== undefined) document.getElementById('feats').value = saved.feats;
+  if (saved.other !== undefined) document.getElementById('other').value = saved.other;
+
+  if (saved.legendaries) {
+    Object.entries(saved.legendaries).forEach(([id, vals]) => {
+      const curEl = document.getElementById(`count-${id}`);
+      const toEl = document.getElementById(`tocreate-${id}`);
+      if (curEl && vals.current !== undefined) curEl.value = vals.current;
+      if (toEl && vals.tocreate !== undefined) toEl.value = vals.tocreate;
+    });
+  }
+
+  calculate(true); // show the restored totals immediately, without yanking scroll on page load
+}
+
+loadState();
 
 function legendaryMultiplier(countFn){
   let legendarySum = 0;
@@ -296,7 +349,7 @@ function legendaryMultiplier(countFn){
   return { mult: (100 + legendarySum) / 100, badgeState };
 }
 
-function calculate(){
+function calculate(silent){
   const base = parseFloat(levelSel.value);
   const feats = parseFloat(document.getElementById('feats').value) || 0;
   const other = parseFloat(document.getElementById('other').value) || 0;
@@ -367,7 +420,11 @@ function calculate(){
     runeCard.style.display = 'none';
   }
 
-  document.getElementById('resultsWrap').scrollIntoView({behavior:'smooth', block:'nearest'});
+  if (!silent) {
+    document.getElementById('resultsWrap').scrollIntoView({behavior:'smooth', block:'nearest'});
+  }
+
+  saveState();
 }
 
 if ('serviceWorker' in navigator) {
