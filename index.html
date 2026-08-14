@@ -80,13 +80,14 @@
   }
   .leg-item:first-of-type{border-top:none;}
   .leg-item img{
-    width:34px; height:34px; object-fit:contain; border-radius:6px; flex:0 0 auto;
+    width:49px; height:49px; object-fit:none; border-radius:6px; flex:0 0 auto;
     background:#0e0b14; padding:3px; border:1px solid #352b46;
   }
   .leg-item .name{flex:1 1 auto; font-size:0.88rem; min-width:100px;}
   .leg-item .bonus-text{font-size:0.72rem; color:var(--muted); display:block;}
   .leg-item input{width:46px; text-align:center; padding:8px 4px;}
   .qty-block{display:flex; flex-direction:column; gap:4px; align-items:center;}
+  .qty-block-group{display:flex; flex-direction:row; gap:16px; align-items:center; margin-left: auto;}
   .qty-label{font-size:0.65rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.03em;}
   .stepper{display:flex; align-items:center; gap:8px;}
   .stepper input{text-align:center;}
@@ -255,8 +256,9 @@ GROUPS.forEach(g => {
     row.className = 'leg-item';
     row.innerHTML = `
       <img src="${m.img}" alt="${m.name}">
-      <div class="name">${m.name}<span class="bonus-text">+${m.bonus}% first, +${m.add}% each dupe</span></div>
-      <div class="qty-block">
+      <div class="name">${m.name}<span class="bonus-text">+${m.bonus}% first, </span><span class="bonus-text">+${m.add}% each dupe</span></div>
+      <div class="qty-block-group">
+        <div class="qty-block">
         <span class="qty-label">Current</span>
         <div class="qty-wrap">
           <button type="button" class="step-btn" onclick="step('count-${m.id}',-1,0,99)">−</button>
@@ -271,6 +273,7 @@ GROUPS.forEach(g => {
           <input type="number" min="0" value="0" id="tocreate-${m.id}" data-group="${g.id}">
           <button type="button" class="step-btn" onclick="step('tocreate-${m.id}',1,0,99)">+</button>
         </div>
+      </div>
       </div>
     `;
     gDiv.appendChild(row);
